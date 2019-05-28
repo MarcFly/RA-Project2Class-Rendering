@@ -134,6 +134,11 @@
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                 gl.bindTexture(gl.TEXTURE_2D, null);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                //gl.uniform1i(shaderProgram.samplerUniform, 0);
+                gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"),0);
             }
 
             var mvMatrix = mat4.create();
@@ -215,9 +220,7 @@
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexColorBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, quadVertexColorBuffer.itemSize, gl.FLOAT, false, 0,0);
                     
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, myTexture);
-                    gl.uniform1i(shaderProgram.samplerUniform, 0);
+                    
                     
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexTexCoordsBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexTexCoordsAttribute, quadVertexTexCoordsBuffer.itemSize, gl.FLOAT, false, 0, 0);
