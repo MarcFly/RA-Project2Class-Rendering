@@ -28,9 +28,9 @@
             precision mediump float;
             varying vec3 vColor;
             varying vec2 texCoords;
-            uniform sampler2D texture;
+            uniform sampler2D uTexture;
             void main(void) {
-                gl_FragColor = texture2D(texture, texCoords);
+                gl_FragColor = texture2D(uTexture, texCoords);
             }
         </script>
         
@@ -112,6 +112,8 @@
                 shaderProgram.vertexTexCoordsAttribute = gl.getAttribLocation(shaderProgram, "aVertexTexCoords");
                 gl.enableVertexAttribArray(shaderProgram.vertexTexCoordsAttribute);           
 
+                shaderProgram.sampler2D = gl.getUniformLocation(shaderProgram, "uTexture");
+
                 shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
                 shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
             }
@@ -121,10 +123,10 @@
             function loadTextureOnGPU(){
                 myTexture = gl.createTexture();
                 myTexture.image = new Image();
+                myTexture.image.src = "t1.png";
                 myTexture.image.onload = function(){ 
                     setTextureParams(myTexture);
-                };
-                myTexture.image.src = "t1.png";
+                }              
             }
 
             function setTextureParams(tex){
@@ -137,8 +139,7 @@
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex);
-                //gl.uniform1i(shaderProgram.samplerUniform, 0);
-                gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"),0);
+                gl.uniform1i(shaderProgram.sampler2D, 0);
             }
 
             var mvMatrix = mat4.create();
@@ -208,29 +209,27 @@
             }
 
             function drawScene() {
-                //gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                //gl.clearDepth(1.0);
                 gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
                 {// Triangle Normal Extended
-                    mat4.identity(mvMatrix);
+                    //mat4.identity(mvMatrix);
+
+                    
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexColorBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, quadVertexColorBuffer.itemSize, gl.FLOAT, false, 0,0);
-                    
-                    
                     
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexTexCoordsBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexTexCoordsAttribute, quadVertexTexCoordsBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexPositionBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, quadVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-                    sendMatricesToShader();
+                    //sendMatricesToShader();
+                    
                     gl.drawArrays(gl.TRIANGLES, 0, quadVertexPositionBuffer.numItems);
                 }
-                
             }
 
             function webGLStart() {
