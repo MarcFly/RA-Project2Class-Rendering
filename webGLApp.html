@@ -201,27 +201,33 @@
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
             }
             var dist = null;
+            var travel = null;
             function handleKeys() {
                 //Left Cursor Key
-                if(currentlyPressedKeys[37])
-                {}
+                if(currentlyPressedKeys[37]) {
+                    travel -= 0.1;
+                }
                 //Up Cursor Key
                 if(currentlyPressedKeys[38]) {   
-                    dist += 0.1;
+                    dist -= 0.1;
                     console.log(dist);
                 }
                 //Right Cursor Key
-                if(currentlyPressedKeys[39])
-                {}
+                if(currentlyPressedKeys[39]) {
+                    travel += 0.1;
+                }
                 //Down Cursor Key
                 if(currentlyPressedKeys[40]) { 
-                    dist -= 0.1;
+                    dist += 0.1;
                     console.log(dist);
                 }   
 
                 if(currentlyPressedKeys[82])
-                {mat4.identity(mouseMatrix);
-                dist = 0;}
+                {
+                    mat4.identity(mouseMatrix);
+                    dist = 0;
+                    travel = 0;
+                }
             }
 
             var mvMatrixStack = [];
@@ -240,7 +246,7 @@
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
                 mat4.identity(mvMatrix);
-                mat4.translate(mvMatrix, [0.0,0.0,- dist]);
+                mat4.translate(mvMatrix, [-travel,0.0,- dist]);
                 
                 mat4.multiply(mvMatrix, mouseMatrix);
 
@@ -262,6 +268,30 @@
                     mvPushMatrix();
                     // Transform Object
                     mat4.translate(mvMatrix,[0.0,0.0,-10.0]);  
+                    sendMatricesToShader();
+                    mvPopMatrix();
+
+                    gl.drawArrays(gl.TRIANGLES, 0, quadVertexPositionBuffer.numItems);
+                }
+
+                 // Triangle Normal Extended
+                 {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, myTexture);
+                    gl.uniform1i(shaderProgram.sampler2D, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexColorBuffer);
+                    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, quadVertexColorBuffer.itemSize, gl.FLOAT, false, 0,0);
+                    
+                    gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexTexCoordsBuffer);
+                    gl.vertexAttribPointer(shaderProgram.vertexTexCoordsAttribute, quadVertexTexCoordsBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexPositionBuffer);
+                    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, quadVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    mvPushMatrix();
+                    // Transform Object
+                    mat4.translate(mvMatrix,[10.0,0.0,-10.0]);  
                     sendMatricesToShader();
                     mvPopMatrix();
 
