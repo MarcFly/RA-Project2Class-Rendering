@@ -18,8 +18,7 @@
             varying vec2 texCoords;
 
             void main(void) {
-                gl_Position = vec4(aVertexPosition, 1.0);
-                //gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
                 vColor = aVertexColor;
                 texCoords = aVertexTexCoords; 
             }
@@ -201,18 +200,52 @@
                 quadVertexTexCoordsBuffer.numItems = quadVertexPositionBuffer.numItems;
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
             }
+            var dist = null;
+            function handleKeys() {
+                //Left Cursor Key
+                if(currentlyPressedKeys[37])
+                {}
+                //Up Cursor Key
+                if(currentlyPressedKeys[38]) {   
+                    dist += 0.1;
+                    console.log(dist);
+                }
+                //Right Cursor Key
+                if(currentlyPressedKeys[39])
+                {}
+                //Down Cursor Key
+                if(currentlyPressedKeys[40]) { 
+                    dist -= 0.1;
+                    console.log(dist);
+                }   
+
+                if(currentlyPressedKeys[82])
+                {mat4.identity(mouseMatrix);
+                dist = 0;}
+            }
+
+            var mvMatrixStack = [];
+            function mvPushMatrix() {
+                var copy = mat4.create();
+                mat4.set(mvMatrix,copy);
+                mvMatrixStack.push(copy);
+            }
+            function mvPopMatrix() {
+                if(mvMatrixStack.length > 0)
+                    mvMatrix = mvMatrixStack.pop();
+            }
 
             function drawScene() {
                 gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                //mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+                mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+                mat4.identity(mvMatrix);
+                mat4.translate(mvMatrix, [0.0,0.0,- dist]);
+                
+                mat4.multiply(mvMatrix, mouseMatrix);
 
                 // Triangle Normal Extended
                 {
-                    mat4.identity(mvMatrix);
-                    //mat4.translate(mvMatrix, [-1.5, 0.0, -10.0]);
-                    //mat4.rotate(mvMatrix, 3.1415 * 0.25, [0.0, 0.0, 1.0]);
-                    //mat4.scale(mvMatrix, [a,b,c]);
                     gl.activeTexture(gl.TEXTURE0);
                     gl.bindTexture(gl.TEXTURE_2D, myTexture);
                     gl.uniform1i(shaderProgram.sampler2D, 0);
@@ -225,13 +258,87 @@
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexPositionBuffer);
                     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, quadVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-                    //sendMatricesToShader();
                     
+                    mvPushMatrix();
+                    // Transform Object
+                    mat4.translate(mvMatrix,[0.0,0.0,-10.0]);  
+                    sendMatricesToShader();
+                    mvPopMatrix();
+
                     gl.drawArrays(gl.TRIANGLES, 0, quadVertexPositionBuffer.numItems);
                 }
             }
 
+            var currentlyPressedKeys = {};
+            function handleKeyDown(event) {
+                currentlyPressedKeys[event.keyCode] = true;
+            }
+            function handleKeyUp(event) {
+                currentlyPressedKeys[event.keyCode] = false;
+            }
+
+            var lastMX = null;
+            var lastMY = null;
+            var mouseDownKeys = {};
+            function handleMouseDown(event) {
+                mouseDownKeys[event.button] = true;
+
+                lastMX = event.clientX;
+                lastMY = event.clientY;
+            }
+            function handleMouseUp() {
+                mouseDownKeys[event.button] = false;
+
+                lastMX = event.clientX;
+                lastMY = event.clientY;
+            }
+
+
+            function deg2Rad(angle) {
+                return angle * (Math.PI / 180);
+            }
+
+            var mouseMatrix = mat4.create();
+            mat4.identity(mouseMatrix);
+            function handleMouseMove() {
+                var newX = event.clientX;
+                var newY = event.clientY;
+                var deltaX = newX - lastMX;
+                var deltaY = newY - lastMY;
+
+                // Left Button
+                if(mouseDownKeys[0]) {
+                    var newRotationMatrix = mat4.create();
+                    mat4.identity(newRotationMatrix);
+                    mat4.rotate(newRotationMatrix, deg2Rad(deltaX / 10), [0,1,0]);
+                    mat4.rotate(newRotationMatrix, deg2Rad(deltaY / 10), [1,0,0]);
+                    mat4.multiply(newRotationMatrix, mouseMatrix, mouseMatrix);
+                    console.log(deltaX, deltaY);
+                }
+                // Mid Button
+                if(mouseDownKeys[1]) {
+                    var newTransMatrix = mat4.create();
+                    mat4.identity(newTransMatrix);
+                    mat4.translate(newTransMatrix, [deltaX /108, -deltaY/108,0]);
+                    mat4.multiply(newTransMatrix, mouseMatrix, mouseMatrix);
+
+                }
+                // Right Button
+                if(mouseDownKeys[2]) {                    
+
+                }
+
+                lastMX = newX;
+                lastMY = newY;
+
+            }
             function webGLStart() {
+                document.onmousedown = handleMouseDown;
+                document.onmouseup = handleMouseUp;
+                document.onmousemove = handleMouseMove;
+                document.onkeydown = handleKeyDown;
+                document.onkeyup = handleKeyUp;
+
                 var canvas = document.getElementById("webGL-canvas");
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
@@ -244,12 +351,14 @@
                 loadTextureOnGPU();
                 gl.clearColor(0.0, 0.0, 0.0, 1.0);
                 gl.enable(gl.DEPTH_TEST);
-
-                renderingLoop();
+                gl.enable(gl.CULL_FACE);
+                gl.cullFace(gl.BACK);
+                reDraw();
             }
 
-            function renderingLoop(){
-                requestAnimationFrame(renderingLoop);
+            function reDraw(){
+                requestAnimationFrame(reDraw);
+                handleKeys();
                 drawScene();
             }
 
